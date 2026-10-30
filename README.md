@@ -35,7 +35,7 @@ public/widget.js ──POST──► api/faq-agent.js (shared engine)
 moves the price:
 
 1. Épület: panel / tégla lakás, családi ház, **többszintes ház**, iroda, ipari, egyéb
-2. Házaknál: **hány szintes**, és melyik szinten lesz a bontás · lakásoknál: emelet + lift
+2. Házaknál: melyik szinten lesz a bontás · lakásoknál: emelet + lift
 3. Terület (m² sáv vagy szám)
 4. **Mit kell elbontani** (több is): teljes belső csupasz falig · padlócsempe ·
    parketta/laminált/PVC · **falicsempe vésése** · vakolat · aljzat · válaszfal ·
@@ -43,20 +43,46 @@ moves the price:
    konyhabútor · fa szerkezet · vezetékek
 5. Minden bejelölt tételhez egy rövid "mennyit" kérdés (hány helyiség, hány fal,
    hány ablak/ajtó, mennyi vésés…)
-6. Falazat anyaga (ha számít) → teherhordó fal / új nyílás → lakott-e →
-   konténer helye → takarítás utána → kezdés
+6. Falazat anyaga (ha számít) → teherhordó fal / új nyílás → lakott-e → kezdés
 
 **Teljes épület / melléképület:** szerkezet → alapterület → szintek → pince →
-tetőfedés (pala → azbeszt figyelmeztetés) → közművek → konténer helye → kezdés.
+tetőfedés (pala → azbeszt figyelmeztetés) → kezdés.
 
-Then one form: név, telefon, település, e-mail (optional), **magánszemély / cég /
-intézmény / társasház**, preferred survey time (optional).
+Questions that do not move the price (number of storeys, container position,
+cleaning, utilities) are deliberately left out: each one costs completions. The
+quote names them as exclusions and the survey settles them.
+
+Then one form: név, telefon, település, **magánszemély / cég / intézmény /
+társasház** (magánszemély preselected). The survey time is asked after the quote.
 
 **Kezdés** is always Amint lehet / 30 / 60 / 90 napon belül; a typed later start
 is politely refused (Banacraft only takes jobs starting within 3 months).
 
 Load-bearing walls and new openings are never priced: the bot says a structural
 engineer (statikus) is needed and flags it for the survey.
+
+## Keeping customers in the chat
+
+- **Back** on every question and on the form; **resume** after a reload (kept in
+  sessionStorage, gone when the tab closes).
+- **A failed request** is retried once quietly; after that the customer's buttons
+  or the form (with what they typed) come back.
+- **"Inkább visszahívást kérek"** under the chat sends the owner a "VISSZAHÍVÁS"
+  e-mail with the answers so far. It does not go to Zoho Flow: that webhook
+  expects a priced quote.
+- **Under the finished quote:** survey-time buttons and a tap-to-call button. A
+  picked time e-mails the owner.
+- **Typed answers** that are a button in other words (no accents, "igen", the
+  start of one label) are read without a model call. Typed start dates are judged
+  against today: "télen" is fine in October, "tavasszal" is not.
+- **AI:** 8 s timeout, then the other provider if its key is set, then the buttons.
+  A price in the model's reply is replaced before the customer sees it.
+- **Analytics (PostHog):** `step_shown` and `question_answered` carry `field`, so
+  drop-off shows per question. Also `back_clicked`, `callback_opened`,
+  `callback_requested`, `form_submitted`, `form_error`, `survey_time_picked`,
+  `call_cta_clicked`, `chat_resumed`.
+- **Region:** `vercel.json` runs the function in `fra1` (Frankfurt), close to the
+  customers.
 
 ## Pricing
 
@@ -135,8 +161,7 @@ other change - hence `launcher: false`.
 - **Stopped halfway:** the conversation so far (chat closed, page left, or 3 idle
   minutes; max 3 per conversation).
 - **Zoho Flow:** same webhook contract as the NM Bau bot (`ZOHO_FLOW_WEBHOOK_URL`),
-  with `quote_basis: "floor"`. Remove the `[TEMP zoho payload]` log line once the
-  mapping is verified.
+  with `quote_basis: "floor"`. The payload is logged as `[zoho payload]` with contact details masked.
 
 ## Editing
 
