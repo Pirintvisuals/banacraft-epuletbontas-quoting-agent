@@ -31,35 +31,9 @@ public/widget.js ──POST──► api/faq-agent.js (shared engine)
 
 ## The questions
 
-**Belső bontás** - the detailed one, because *what exactly comes out* is what
-moves the price:
-
-1. Épület: panel / tégla lakás, családi ház, **többszintes ház**, iroda, ipari, egyéb
-2. Házaknál: melyik szinten lesz a bontás · lakásoknál: emelet + lift
-3. Terület (m² sáv vagy szám)
-4. **Mit kell elbontani** (több is): teljes belső csupasz falig · padlócsempe ·
-   parketta/laminált/PVC · **falicsempe vésése** · vakolat · aljzat · válaszfal ·
-   álmennyezet · **nyílászárók** · **vésés (horony, áttörés)** · fürdő berendezés ·
-   konyhabútor · fa szerkezet · vezetékek
-5. Minden bejelölt tételhez egy rövid "mennyit" kérdés (hány helyiség, hány fal,
-   hány ablak/ajtó, mennyi vésés…)
-6. Falazat anyaga (ha számít) → teherhordó fal / új nyílás → lakott-e → kezdés
-
-**Teljes épület / melléképület:** szerkezet → alapterület → szintek → pince →
-tetőfedés (pala → azbeszt figyelmeztetés) → kezdés.
-
-Questions that do not move the price (number of storeys, container position,
-cleaning, utilities) are deliberately left out: each one costs completions. The
-quote names them as exclusions and the survey settles them.
-
-Then one form: név, telefon, település, **magánszemély / cég / intézmény /
-társasház** (magánszemély preselected). The survey time is asked after the quote.
-
-**Kezdés** is always Amint lehet / 30 / 60 / 90 napon belül; a typed later start
-is politely refused (Banacraft only takes jobs starting within 3 months).
-
-Load-bearing walls and new openings are never priced: the bot says a structural
-engineer (statikus) is needed and flags it for the survey.
+Bontás típusa → helyszín → emelet / lift → mit kell elbontani (több is) → a
+mennyisége tételenként (m², db, beton: m² és cm) → kezdés. The building type
+does not matter. Load-bearing walls are not demolished (said in the scope hint).
 
 ## Keeping customers in the chat
 
@@ -86,16 +60,31 @@ engineer (statikus) is needed and flags it for the survey.
 
 ## Pricing
 
-- **A floor, never a range.** Band answers are priced at their lower edge, "Nem
-  tudom" at a modest default, and the assumption is printed. The number can only
-  go up at the survey.
-- **Debris is counted, not guessed:** every line carries a m³-per-unit figure,
-  and the total fills 8 m³ containers.
+- **Banacraft's own prices** (Róbert, 2026-10-30 and 2026-11-05), all in `P`
+  at the top of `lib/flow.js`. The full list and the decisions behind it are in
+  `banacraft-arak-2026-10-30.md` next to the three bot folders.
+- **A floor, never a range.** A band button is priced at its lower edge and the
+  assumption is printed; a typed number is priced as typed.
+- **Every quantity question** has buttons AND a field for the exact number
+  ("pontosan lehessen beírni a számokat").
+- **Location first:** Budapest / Pest megye / Pest környéki megye / Távolabb.
+  "Távolabb" skips straight to the start date and gets a call, not a price.
+- **Start within 60 days** (Amint lehet / 30 / 60 napon belül); a typed later
+  start is politely refused.
+- **No price, a call instead** for the jobs listed below: the customer sees why
+  and "kollégánk hamarosan hívja"; the owner gets a "Hívást kér" e-mail with the
+  answers and, where there is a rate, Róbert's figure for the call. Zoho gets
+  `quote_basis: "call"` and no amounts.
 - **VAT:** magánszemély and társasház see gross, cég and intézmény see net + ÁFA.
-- **All rates live in `P` at the top of `lib/flow.js`.** They are
-  market-calibrated starting points, **not Banacraft's own price list** - replace
-  them with Banacraft's numbers as soon as they're known. `npm test` prints sample
-  quotes, so a bad edit shows immediately.
+- `npm test` clicks every scenario through and checks the exact total.
+- **Interior, haulage included:** burkolat 5 900 Ft/m², tégla válaszfal 8 900 Ft/m²,
+  vakolat (3–4 cm-ig) 5 900 Ft/m², gipszkarton profilokkal 4 900 Ft/m², betonvésés
+  1 000 Ft/m²/cm, nyílászáró 9 900 Ft/db, bútor 9 900 Ft/db, falemez 3 900 Ft/m².
+  Pest megye +10%, környező megye +20%, +10% per floor without a lift. No
+  minimum job.
+- **A call instead of a price:** whole houses and outbuildings (the owner's
+  e-mail carries 50 000 / 35 000 / 18 000 Ft/m² as reference), panel válaszfal on
+  its own, Távolabb.
 
 ## Run, test, deploy
 
@@ -158,6 +147,8 @@ other change - hence `launcher: false`.
 
 - **Finished estimate:** contact details, customer type, every answer, the
   itemised price, exclusions, warnings (statikus, azbeszt) and the full chat.
+- **No price, a call promised:** "Hívást kér: név, telefon - munka, település" -
+  the answers, why there was no price, and the reference figure where there is one.
 - **Stopped halfway:** the conversation so far (chat closed, page left, or 3 idle
   minutes; max 3 per conversation).
 - **Zoho Flow:** same webhook contract as the NM Bau bot (`ZOHO_FLOW_WEBHOOK_URL`),
